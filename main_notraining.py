@@ -4,6 +4,7 @@ import os.path
 import settings
 
 stock_code = '217270'  # 넵튠
+model_ver = '20210106184259'
 
 # 로그 기록
 log_dir = os.path.join(settings.BASE_DIR, 'logs/%s' % stock_code)
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     training_data = data_manager.build_training_data(prep_data)
 
     # 기간 필터링
-    training_data = training_data[(training_data['date'] >= '2018-01-01') & (training_data['date'] <= '2020-12-31')]
+    training_data = training_data[(training_data['date'] >= '2020-01-01') & (training_data['date'] <= '2020-12-31')]
     training_data = training_data.dropna()
 
     # 준비한 주식 데이터를 차트 데이터와 학습 데이터로 분리
@@ -53,16 +54,15 @@ if __name__ == '__main__':
     ]
     training_data = training_data[features_training_data]
 
-    # 강화학습 시작
+    # 비학습 투자 시뮬레이션 시작
     policy_learner = PolicyLearner(
         stock_code=stock_code, chart_data=chart_data, training_data=training_data, min_trading_unit=1,
-        max_trading_unit=10, delayed_reward_threshold=.05, lr=.0001
-    )
-    policy_learner.fit(balance=1000000, num_epoches=1000, discount_factor=0, start_epsilon=.5)
+        max_trading_unit=10)
+    policy_learner.trade(balance=1000000, model_path=os.path.join(settings.BASE_DIR, 'model\{}\model_{}.h5'.format(stock_code, model_ver)))
 
-    # 정책 신경망을 파일로 저장
-    model_dir = os.path.join(settings.BASE_DIR, 'model/%s' % stock_code)
-    if not os.path.isdir(model_dir):
-        os.makedirs(model_dir)
-    model_path = os.path.join(model_dir, 'model_%s.h5' % timestr)
-    policy_learner.policy_network.save_model(model_path)
+    # 정책 신경망을 파일로 저장. 추가적인 학습을 수행하여 모델을 새로 저장하고 싶다면 코드 블록을 그대로 두면 된다
+    # model_dir = os.path.join(settings.BASE_DIR, 'model/%s' % stock_code)
+    # if not os.path.isdir(model_dir):
+    #     os.makedirs(model_dir)
+    # model_path = os.path.join(model_dir, 'model_%s.h5' % timestr)
+    # policy_learner.policy_network.save_model(model_path)
