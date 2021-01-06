@@ -85,8 +85,11 @@ class Visualizer:
         self.axes[3].fill_between(x, pvs, pvs_base, where=pvs < pvs_base, facecolor='b', alpha=0.1)
         self.axes[3].plot(x, pvs, '-k')  # 포트폴리오 가치를 검정색 실선으로 그린다
         # 학습 위치 표시
-        for learning_idx in learning_idxes:
-            self.axes[3].axvline(learning_idx, color='y')
+        for learning_idx, delayed_reward in learning_idxes:
+            if delayed_reward > 0:
+                self.axes[3].axvline(learning_idx, color='r', alpha=0.1)
+            else:
+                self.axes[3].axvline(learning_idx, color='b', alpha=0.1)
 
         # 에포크 및 탐험 비율
         self.fig.suptitle('Epoch %s/%s (e=%.2f)' % (epoch_str, num_epoches, epsilon))  # 문자열에 값 넣기

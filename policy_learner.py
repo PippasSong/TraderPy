@@ -58,7 +58,7 @@ class PolicyLearner:
         # 가시화 결과 저장할 폴더 준비
         # join(parent, child) 로 폴더 생성
         epoch_summary_dir = os.path.join(settings.BASE_DIR,
-                                         'epoch_summary/%s?epoch_summary_%s' % (
+                                         'epoch_summary/%s/epoch_summary_%s' % (
                                              self.stock_code, settings.timestr))  # 가시화 결과를 저장시 날짜와 시간 지정
         if not os.path.isdir(epoch_summary_dir):  # path 가 존재하고 폴더인지 확인
             os.makedirs(epoch_summary_dir)  # path 에 포함된 폴더들이 없을 경우 생성해 줌
@@ -127,7 +127,7 @@ class PolicyLearner:
 
                 # 학습 데이터의 샘플, 에이전트 행동, 즉시보상, 포트폴리오 가치, 보유 주식 수를 저장하는 2차원 배열
                 memory = [(memory_sample[i], memory_action[i], memory_reward[i])
-                          for i in list(range(len(memory_action)))[-max_memory]]
+                          for i in list(range(len(memory_action)))[-max_memory:]]
                 if exploration:
                     memory_exp_idx.append(itr_cnt)  # 무작위 행동을 결정한 경우 현재의 인덱스를 저장
                     memory_prob.append([np.nan] * Agent.NUM_ACTIONS)  # 무작위 투자에서는 정책 신경망의 출력이 없기 때문에 nan값을 넣는다. 리스트에
