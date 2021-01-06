@@ -1,8 +1,6 @@
 import os
 import locale
 import logging
-import time
-import datetime
 import numpy as np
 import settings
 from environment import Environment
@@ -10,7 +8,7 @@ from agent import Agent
 from policy_network import PolicyNetwork
 from visualizer import Visualizer
 
-logger = logging.getLogger(__name__)
+locale.setlocale(locale.LC_ALL, 'ko_KR.UTF-8')
 
 
 class PolicyLearner:
@@ -43,7 +41,7 @@ class PolicyLearner:
     # start_epsilon: 초기 탐험 비율
     # learning: 학습 유무, 학습된 모델을 가지고 투자 시뮬레이션만 하려 한다면 False.
     def fit(self, num_epoches=1000, max_memory=60, balance=1000000, discount_factor=0, start_epsilon=.5, learning=True):
-        logger.info("LR: {lr}, DF: {discount_factor}, "
+        logging.info("LR: {lr}, DF: {discount_factor}, "
                     "TU: [{min_trading_unit}, {max_trading_unit}],"
                     "DRT: {delayed_reward_threshold}".format(lr=self.policy_network.lr, discount_factor=discount_factor,
                                                              min_trading_unit=self.agent.min_trading_unit,
@@ -79,7 +77,7 @@ class PolicyLearner:
             exploration_cnt = 0  # 무작위 투자를 수행한 횟수를 저장
             batch_size = 0
             pos_learning_cnt = 0  # 수익이 발생하여 긍정적 지연 보상을 준 수
-            neg_learning_cnt = 0  # 손실이 발생하여 부벙적 지연 보상을 준 수
+            neg_learning_cnt = 0  # 손실이 발생하여 부정적 지연 보상을 준 수
 
             # 메모리 초기화
             memory_sample = []
@@ -144,6 +142,7 @@ class PolicyLearner:
                 # 학습 모드이고 지연 보상이 존재할 경우 정책 신경망 갱신
                 if delayed_reward == 0 and batch_size >= max_memory:
                     delayed_reward = immediate_reward
+                    self.agent.base_portfolio_value = self.agent.portfolio_value
                 if learning and delayed_reward != 0:
                     # 배치 학습 데이터 크기
                     batch_size = min(batch_size, max_memory)
@@ -160,42 +159,43 @@ class PolicyLearner:
                         memory_learning_idx.append([itr_cnt, delayed_reward])
                     batch_size = 0  # 학습 수행 후 배치 데이터 크기를 초기화
 
-                # 에포크 관련 정보 가시화
-                num_epoches_digit = len(str(num_epoches))
-                epoch_str = str(epoch + 1).rjust(num_epoches_digit, '0')  # 문자열을 자리수에 맞게 오른쪽으로 정렬해 주는 함수
+            # 에포크 관련 정보 가시화
+            num_epoches_digit = len(str(num_epoches))
+            epoch_str = str(epoch + 1).rjust(num_epoches_digit, '0')  # 문자열을 자리수에 맞게 오른쪽으로 정렬해 주는 함수
 
-                self.visualizer.plot(
-                    epoch_str=epoch_str, num_epoches=num_epoches, epsilon=epsilon,
-                    action_list=Agent.ACTIONS, actions=memory_action,
-                    num_stocks=memory_num_stocks, outvals=memory_prob,
-                    exps=memory_exp_idx, learning_idxes=memory_learning_idx,
-                    initial_balance=self.agent.initial_balance, pvs=memory_pv
-                )
-                # 수행 결과를 파일로 저장
-                self.visualizer.save(
-                    os.path.join(epoch_summary_dir, 'epoch_summary_%s_%s.png' % (settings.timestr, epoch_str)))
+            self.visualizer.plot(
+                epoch_str=epoch_str, num_epoches=num_epoches, epsilon=epsilon,
+                action_list=Agent.ACTIONS, actions=memory_action,
+                num_stocks=memory_num_stocks, outvals=memory_prob,
+                exps=memory_exp_idx, learning_idxes=memory_learning_idx,
+                initial_balance=self.agent.initial_balance, pvs=memory_pv
+            )
+            # 수행 결과를 파일로 저장
+            self.visualizer.save(
+                os.path.join(epoch_summary_dir, 'epoch_summary_%s_%s.png' % (settings.timestr, epoch_str)))
 
-                # 에포크 관련 정보 로그 기록
-                if pos_learning_cnt + neg_learning_cnt > 0:
-                    loss /= pos_learning_cnt + neg_learning_cnt
-                logger.info("[Epoch %s/%s]\tEpsilon:%.4f\t#Expl.:%d/%d\t"
-                            "#Buy:%d\t#Sell:%d\t#Hold:%d\t"
-                            "#Stocks:%d\tPV:%s\t"
-                            "POS:%s\tNEG:%s\tLoss:%10.6f" % (
-                                epoch_str, num_epoches, epsilon, exploration_cnt, itr_cnt,
-                                self.agent.num_buy, self.agent.num_sell, self.agent.num_hold,
-                                self.agent.num_stocks,
-                                locale.currency(self.agent.portfolio_value, grouping=True),
-                                pos_learning_cnt, neg_learning_cnt, loss
-                            ))
+            # 에포크 관련 정보 로그 기록
+            #콘솔창에 뜨는 정보
+            if pos_learning_cnt + neg_learning_cnt > 0:
+                loss /= pos_learning_cnt + neg_learning_cnt
+            logging.info("[Epoch %s/%s]\tEpsilon:%.4f\t#Expl.:%d/%d\t"
+                        "#Buy:%d\t#Sell:%d\t#Hold:%d\t"
+                        "#Stocks:%d\tPV:%s\t"
+                        "POS:%s\tNEG:%s\tLoss:%10.6f" % (
+                            epoch_str, num_epoches, epsilon, exploration_cnt, itr_cnt,
+                            self.agent.num_buy, self.agent.num_sell, self.agent.num_hold,
+                            self.agent.num_stocks,
+                            locale.currency(self.agent.portfolio_value, grouping=True),
+                            pos_learning_cnt, neg_learning_cnt, loss
+                        ))
 
-                # 학습 관련 정보 갱신
-                max_portfolio_value = max(max_portfolio_value, self.agent.portfolio_value)
-                if self.agent.portfolio_value > self.agent.initial_balance:
-                    epoch_win_cnt += 1
+            # 학습 관련 정보 갱신
+            max_portfolio_value = max(max_portfolio_value, self.agent.portfolio_value)
+            if self.agent.portfolio_value > self.agent.initial_balance:
+                epoch_win_cnt += 1
 
         # 학습 관련 정보 로그 기록
-        logger.info("Max PV: %s, \t # Win: %d" % (
+        logging.info("Max PV: %s, \t # Win: %d" % (
             locale.currency(max_portfolio_value, grouping=True), epoch_win_cnt
         ))
 
