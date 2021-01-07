@@ -33,7 +33,7 @@ if __name__ == '__main__':
     training_data = data_manager.build_training_data(prep_data)
 
     # 기간 필터링
-    training_data = training_data[(training_data['date'] >= '2018-01-01') & (training_data['date'] <= '2020-12-31')]
+    training_data = training_data[(training_data['date'] >= '2018-01-01') & (training_data['date'] <= '2021-01-07')]
     training_data = training_data.dropna()
 
     # 준비한 주식 데이터를 차트 데이터와 학습 데이터로 분리

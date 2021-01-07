@@ -40,7 +40,8 @@ class PolicyLearner:
     # discount_factor: 먼 과거의 행동일수록 할인 요인을 적용하여 지연 보상을 약하게 적용
     # start_epsilon: 초기 탐험 비율
     # learning: 학습 유무, 학습된 모델을 가지고 투자 시뮬레이션만 하려 한다면 False.
-    def fit(self, num_epoches=1000, max_memory=60, balance=1000000, discount_factor=0, start_epsilon=.5, learning=True):
+    # init_stocks: 초기에 보유한 주식의 수
+    def fit(self, num_epoches=1000, max_memory=60, balance=1000000, discount_factor=0, start_epsilon=.5, learning=True, past_stock_value=0, cur_stock_value=0, init_stocks=0):
         logging.info("LR: {lr}, DF: {discount_factor}, "
                     "TU: [{min_trading_unit}, {max_trading_unit}],"
                     "DRT: {delayed_reward_threshold}".format(lr=self.policy_network.lr, discount_factor=discount_factor,
@@ -63,6 +64,7 @@ class PolicyLearner:
 
         # 에이전트 초기 자본금 설정
         self.agent.set_balance(balance)
+
 
         # 학습에 대한 정보 초기화
         max_portfolio_value = 0
@@ -91,7 +93,7 @@ class PolicyLearner:
 
             # 환경, 에이전트, 정책 신경망 초기화
             self.environment.reset()
-            self.agent.reset()
+            self.agent.reset(past_stock_value, cur_stock_value, init_stocks)
             self.policy_network.reset()
             self.reset()
 
@@ -175,17 +177,17 @@ class PolicyLearner:
                 os.path.join(epoch_summary_dir, 'epoch_summary_%s_%s.png' % (settings.timestr, epoch_str)))
 
             # 에포크 관련 정보 로그 기록
-            #콘솔창에 뜨는 정보
+            # 콘솔창에 뜨는 정보
             if pos_learning_cnt + neg_learning_cnt > 0:
                 loss /= pos_learning_cnt + neg_learning_cnt
             logging.info("[Epoch %s/%s]\tEpsilon:%.4f\t#Expl.:%d/%d\t"
                         "#Buy:%d\t#Sell:%d\t#Hold:%d\t"
-                        "#Stocks:%d\tPV:%s\t"
+                        "#Stocks:%d\tPV:%s\t(%s+%s*%s)\t"
                         "POS:%s\tNEG:%s\tLoss:%10.6f" % (
                             epoch_str, num_epoches, epsilon, exploration_cnt, itr_cnt,
                             self.agent.num_buy, self.agent.num_sell, self.agent.num_hold,
                             self.agent.num_stocks,
-                            locale.currency(self.agent.portfolio_value, grouping=True),
+                            locale.currency(self.agent.portfolio_value, grouping=True),self.agent.balance, self.environment.get_price(), self.agent.num_stocks,
                             pos_learning_cnt, neg_learning_cnt, loss
                         ))
 
@@ -223,8 +225,9 @@ class PolicyLearner:
         return None
 
     # 학습된 정책 신경망 모델로 주식투자 시뮬레이션
-    def trade(self, model_path=None, balance=2000000):
+    # init_stocks: 초기에 보유한 주식 수
+    def trade(self, model_path=None, balance=2000000, past_stock_value=0, cur_stock_value=0, init_stocks=0):
         if model_path is None:
             return
         self.policy_network.load_model(model_path=model_path)  # 학습된 신경망 모델을 적용
-        self.fit(balance=balance, num_epoches=1, learning=False)  # 학습을 진행하지 않고 정책 신경망에만 의존하여 투자 시뮬레이션을 진행
+        self.fit(balance=balance, num_epoches=1, learning=False, past_stock_value=past_stock_value, cur_stock_value=cur_stock_value, init_stocks=init_stocks)  # 학습을 진행하지 않고 정책 신경망에만 의존하여 투자 시뮬레이션을 진행

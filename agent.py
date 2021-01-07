@@ -42,11 +42,11 @@ class Agent:
         self.ratio_portfolio_value = 0
 
     # 한 에포크마다 에이전트의 상태를 초기화
-    def reset(self):
+    def reset(self, past_stock_value=0, cur_stock_value=0, num_stocks=0):
         self.balance = self.initial_balance
-        self.num_stocks = 0
-        self.portfolio_value = self.initial_balance
-        self.base_portfolio_value = self.initial_balance
+        self.num_stocks = num_stocks
+        self.portfolio_value = self.initial_balance + cur_stock_value  # 307927 # balance+num_stocks*{현재 주식 가격}
+        self.base_portfolio_value = self.initial_balance + past_stock_value  # 직전 학습 시점의 PV. initial balance가 과거의 balance가 되도록 해야 함. 매개변수로 과거 주식을 받을게 하니라 전체 포트폴리오를 받아 대입할 것. 에이전트 파일을 하나 더 만들기 or 지연보상을 고려하지 않으므로 무시?(포트폴리오 가치와 같은 값 주기)
         self.num_buy = 0
         self.num_sell = 0
         self.num_hold = 0
@@ -58,11 +58,18 @@ class Agent:
     def set_balance(self, balance):
         self.initial_balance = balance
 
+    # 직전 학습 시점의 pv를 설정
+    def set_base_portfolio_value(self, base_portfolio_value):
+        self.base_portfolio_value = base_portfolio_value
+
     # 에이전트의 상태를 반환
     def get_states(self):
         # 주식 보유 비율 = 보유 주식 수/(포트폴리오 가치/현재 주가)---->최대 보유 가능한 주식 중 얼마나 보유하고 있는가
         self.ratio_hold = self.num_stocks / int(self.portfolio_value / self.environment.get_price())
-        self.ratio_portfolio_value = self.portfolio_value / self.initial_balance
+        # 포트폴리오 가치 비율 = 포트폴리오 가치 / 기준 포트폴리오 가치---->0에 가까울수록 큰 손실 1보다 크면 수익 발생 의미
+        # 기준 포트폴리오 가치는 직전에 목표 수익 또는 손익률을 달성했을 때의 포트폴리오 가치
+        # 수익률이 목표 수익률에 가까우면 매도의 관점에서 투자
+        self.ratio_portfolio_value = self.portfolio_value / self.base_portfolio_value
 
         # 튜플로 반환
         return (
