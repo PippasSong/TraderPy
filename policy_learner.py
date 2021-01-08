@@ -93,7 +93,7 @@ class PolicyLearner:
 
             # 환경, 에이전트, 정책 신경망 초기화
             self.environment.reset()
-            self.agent.reset(past_stock_value, cur_stock_value, init_stocks)
+            self.agent.reset(cur_stock_value, init_stocks)
             self.policy_network.reset()
             self.reset()
 
@@ -226,8 +226,8 @@ class PolicyLearner:
 
     # 학습된 정책 신경망 모델로 주식투자 시뮬레이션
     # init_stocks: 초기에 보유한 주식 수
-    def trade(self, model_path=None, balance=2000000, past_stock_value=0, cur_stock_value=0, init_stocks=0):
+    def trade(self, model_path=None, balance=2000000, cur_stock_value=0, init_stocks=0):
         if model_path is None:
             return
         self.policy_network.load_model(model_path=model_path)  # 학습된 신경망 모델을 적용
-        self.fit(balance=balance, num_epoches=1, learning=False, past_stock_value=past_stock_value, cur_stock_value=cur_stock_value, init_stocks=init_stocks)  # 학습을 진행하지 않고 정책 신경망에만 의존하여 투자 시뮬레이션을 진행
+        self.fit(balance=balance, num_epoches=1, learning=False, cur_stock_value=cur_stock_value, init_stocks=init_stocks)  # 학습을 진행하지 않고 정책 신경망에만 의존하여 투자 시뮬레이션을 진행

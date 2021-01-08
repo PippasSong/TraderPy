@@ -4,7 +4,7 @@ import os.path
 import settings
 
 stock_code = '217270'  # 넵튠
-model_ver = '20210106184259'
+model_ver = '20210107181206'
 
 # 로그 기록
 log_dir = os.path.join(settings.BASE_DIR, 'logs/%s' % stock_code)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     training_data = data_manager.build_training_data(prep_data)
 
     # 기간 필터링
-    training_data = training_data[(training_data['date'] >= '2021-01-07') & (training_data['date'] <= '2021-01-07')]
+    training_data = training_data[(training_data['date'] >= '2021-01-08') & (training_data['date'] <= '2021-01-08')]
     training_data = training_data.dropna()
 
     # 준비한 주식 데이터를 차트 데이터와 학습 데이터로 분리
@@ -57,9 +57,9 @@ if __name__ == '__main__':
     policy_learner = PolicyLearner(
         stock_code=stock_code, chart_data=chart_data, training_data=training_data, min_trading_unit=1,
         max_trading_unit=10)
-    policy_learner.trade(balance=222877, model_path=os.path.join(settings.BASE_DIR,
-                                                                 'model\{}\model_{}.h5'.format(stock_code, model_ver)), past_stock_value=3*28500,
-                         cur_stock_value=3 * 28350, init_stocks=3)
+    policy_learner.trade(balance=52777, model_path=os.path.join(settings.BASE_DIR,
+                                                                 'model\{}\model_{}.h5'.format(stock_code, model_ver)),
+                         cur_stock_value=9 * 27650, init_stocks=9)
 
     # 정책 신경망을 파일로 저장. 추가적인 학습을 수행하여 모델을 새로 저장하고 싶다면 코드 블록을 그대로 두면 된다
     # model_dir = os.path.join(settings.BASE_DIR, 'model/%s' % stock_code)
